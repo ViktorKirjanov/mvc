@@ -81,7 +81,6 @@
                 <th>Min—Max</th>
                 <th>BTC Rate</th>
                 <th></th>
-                <th></th>
 
             </tr>
             </thead>
@@ -110,7 +109,7 @@
                     </td>
                     <td>
                         <form class="form-inline" method="post" action="/offers/trade">
-                            <div>
+                            <div class="col-sm-9">
                                 <div class="form-group">
                                     <div class="input-group input-group-<?php echo $offer['id']; ?>">
                                         <div class="input-group-addon"><?php echo $offer['fiat']; ?></div>
@@ -128,23 +127,24 @@
                                                value="">
                                     </div>
                                 </div>
-                            </div>
-                            <div>
+                                <div>
                                 <small
                                     class="amount_btc text-muted btc-<?php echo $offer['id']; ?>">0 BTC
                                 </small>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3">
+                            <?php if (Session::get("user_id") != $offer['user_id']) { ?>
+                                <button type="submit" name="submit"
+                                        class="btn btn-<?php echo $offer['id']; ?> btn-success"
+                                        disabled="disabled"><?php echo $offer['type']; ?></button>
+                            <?php } else { ?>
+                                <strong class="text-danger">Your offer.</strong>
+
+                            <?php } ?>
                             </div>
                         </form>
-                    </td>
-                    <td>
-                        <?php if (Session::get("user_id") != $offer['user_id']) { ?>
-                            <button type="submit" name="submit"
-                                    class="btn btn-<?php echo $offer['id']; ?> btn-success"
-                                    disabled="disabled"><?php echo $offer['type']; ?></button>
-                        <?php } else { ?>
-                            <strong class="text-danger">Your offer.</strong>
-
-                        <?php } ?>
                     </td>
                 </tr>
             <?php } ?>
