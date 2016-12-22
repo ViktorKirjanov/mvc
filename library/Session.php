@@ -3,19 +3,12 @@
 class Session
 {
 
-
     /**
      * @param bool $remember
      */
     public static function init($remember = false)
     {
-        if ($remember) {
-            @session_start([
-                'cookie_lifetime' => 31536000,
-            ]);
-        } else {
-            @session_start();
-        }
+        @session_start();
     }
 
     /**

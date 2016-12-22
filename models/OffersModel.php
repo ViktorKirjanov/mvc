@@ -327,7 +327,7 @@ class OffersModel extends Model
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
         $stmt->setFetchMode(PDO::FETCH_ASSOC);
-        $result =  $stmt->fetch();
+        $result = $stmt->fetch();
         return $result["rate"];
     }
 
@@ -431,6 +431,12 @@ class OffersModel extends Model
     }
 
 
+    /**
+     * @param $userId
+     * @param $offerId
+     * @param $amount
+     * @return bool
+     */
     public function createTrade($userId, $offerId, $amount)
     {
 
@@ -460,13 +466,10 @@ class OffersModel extends Model
                 $currencyId = $offer['currency_id'];
                 $rate = $offer['rate'];
                 $margin = $offer['margin'];
-
                 $btc_amount = $amount / (BC_PRICE * $margin * $rate);
-
                 $tradeStatus = 1;
 
                 $sql3 = "INSERT INTO trades(offer_id, user_id, amount, btc_amount, status) VALUES (:offer_id,:user_id, :amount, :btc_amount, :status)";
-
                 $stmt3 = $this->db->prepare($sql3);
                 $stmt3->bindParam(':offer_id', $offerId, PDO::PARAM_INT);
                 $stmt3->bindParam(':user_id', $userId, PDO::PARAM_INT);
@@ -477,15 +480,18 @@ class OffersModel extends Model
                 $this->db->commit();
                 return true;
             }
-
         } catch (Exception $e) {
 //            echo $e->getMessage();
             $this->db->rollBack();
             return false;
         }
-
     }
 
+    /**
+     * @param $userId
+     * @param $tradeId
+     * @return bool
+     */
     public function confirmTrade($userId, $tradeId)
     {
         $sql = "SELECT offers.id, offers.type as type_id, trades.btc_amount, offers.user_id as seller, trades.user_id as buyer  FROM offers 
@@ -541,7 +547,6 @@ class OffersModel extends Model
                 if (!$stmt3->execute())
                     $commit = false;
 
-
                 // update offer and trade statuses
                 $sql4 = "UPDATE offers
                 INNER JOIN trades 
@@ -561,7 +566,6 @@ class OffersModel extends Model
 
                 $this->db->commit();
 
-
             } catch (Exception $e) {
 //                echo $e->getMessage();
                 $this->db->rollBack();
@@ -580,6 +584,10 @@ class OffersModel extends Model
 
     }
 
+    /**
+     * @param $fields
+     * @return array
+     */
     public function validateFields($fields)
     {
         $errors = array();
@@ -592,26 +600,41 @@ class OffersModel extends Model
     }
 
 
-    public function validateNumeric($fields){
+    /**
+     * @param $fields
+     * @return array
+     */
+    public function validateNumeric($fields)
+    {
         $errors = array();
         foreach ($fields as $field => $value) {
-            if (!is_numeric($_POST[$field]) ) {
+            if (!is_numeric($_POST[$field])) {
                 $errors[] = $value . " should be a number";
             }
         }
         return $errors;
     }
 
-    public function validatePositiveNumeric($fields){
+    /**
+     * @param $fields
+     * @return array
+     */
+    public function validatePositiveNumeric($fields)
+    {
         $errors = array();
         foreach ($fields as $field => $value) {
-            if (((float)$_POST[$field])<0) {
+            if (((float)$_POST[$field]) < 0) {
                 $errors[] = $value . " should be a positive number";
             }
         }
         return $errors;
     }
 
+    /**
+     * @param $min
+     * @param $max
+     * @return bool
+     */
     public function validateMinMax($min, $max)
     {
 
@@ -619,6 +642,50 @@ class OffersModel extends Model
             return true;
         return false;
 
+    }
+
+
+    /**
+     * @param $userId
+     * @param $id
+     * @param $amount
+     * @return array
+     */
+    public function validateOffer($userId, $id, $amount)
+    {
+        $errors = array();
+        $wallet = new WalletModel($userId);
+        $userBtc = $wallet->getBtc();
+        $offer = $this->getOfferById($id);
+
+        $userBtcOffer = $offer['max'] / (BC_PRICE * $offer['margin'] * $offer['rate']);
+
+        if($amount<$offer['min'] || $amount > $offer['max']) {
+            $errors[] = WRONG_MIN_MAX;
+        }
+        if($userBtcOffer > $userBtc){
+            $errors[] = NOT_ENOUGH_OF_BTC_2;
+        }
+
+        return $errors;
+
+
+    }
+
+    public  function getTotalBtc($userId){
+        $sql = "SELECT sum(offers.max / (:btc * offers.margin * currencies.rate)) AS sum_btc
+                FROM offers
+                INNER JOIN currencies
+                ON offers.currency_id = currencies.id
+                WHERE user_id = :user_id AND offers.status =1";
+        $stmt = $this->db->prepare($sql);
+        $btc = BC_PRICE;
+        $stmt->bindParam(':btc', $btc, PDO::PARAM_INT);
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $stmt->setFetchMode(PDO::FETCH_ASSOC);
+        $result =  $stmt->fetch();
+        return $result['sum_btc'];
     }
 
 

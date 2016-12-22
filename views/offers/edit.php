@@ -1,9 +1,5 @@
 <div id="edit_form" class="container">
-
-<!--    <pre>-->
-<!--        --><?php //print_r($this->offer); ?>
-<!--    </pre>-->
-
+    
     <form action="/offers/edit/<?php echo $this->offer['id']; ?>" id="edit_offer" method="post"
           class="form-horizontal" autocomplete="off">
 

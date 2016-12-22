@@ -53,6 +53,8 @@ class OffersController extends Controller
         $margin = null;
         $error = false;
         $errors = array();
+        $newMaxOfferBtcAmount = 0;
+        $newMinOfferBtcAmount = 0;
 
         if (isset($_POST['submit'])) {
 //            print_r($_POST);
@@ -101,9 +103,17 @@ class OffersController extends Controller
             $wallet = new WalletModel($this->userId);
             $userBtc = $wallet->getBtc();
             $rate = $offers->getCurrencyRateById($currency);
-            $newOfferBtcAmount = $maxAmount / (BC_PRICE * $margin * $rate);
-            if ($type == 1 && $newOfferBtcAmount > $userBtc) {
+            $totalOffersBtc = $offers->getTotalBtc($this->userId);
+            $newMaxOfferBtcAmount = $maxAmount / (BC_PRICE * $margin * $rate);
+            $newMinOfferBtcAmount = $minAmount / (BC_PRICE * $margin * $rate);
+            $newMaxOfferBtcAmount = (float)number_format((float)$newMaxOfferBtcAmount, 8, '.', '');
+            $newMinOfferBtcAmount = (float)number_format((float)$newMinOfferBtcAmount, 8, '.', '');
+            $totalOffersBtc = (float)number_format((float)$totalOffersBtc, 8, '.', '');
+
+            if ($type == 1 && $newMaxOfferBtcAmount > $userBtc) {
                 $errors[] = NOT_ENOUGH_OF_BTC;
+            } elseif ($type == 1 && (($newMaxOfferBtcAmount + $totalOffersBtc) > $userBtc)) {
+                $errors[] = NOT_ENOUGH_OF_BTC . " " . TOTAL_AMOUNT_ERROR . $totalOffersBtc . " BTC";
             } else {
                 $result = $offers->create($this->userId, $paymentMethod, $type, $maxAmount, $minAmount, $currency, $margin);
                 if ($result) {
@@ -113,13 +123,14 @@ class OffersController extends Controller
 
         }
 
-
         $offerTypes = $offers->getOfferTypes();
         $currencies = $offers->getCurrencies();
         $paymentMethods = $offers->getPaymentMethods();
         $paymentMethodGroups = $offers->getPaymentMethodGroups();
 
         $this->view->errors = $errors;
+        $this->view->newMinOfferBtcAmount = $newMinOfferBtcAmount;
+        $this->view->newMaxOfferBtcAmount = $newMaxOfferBtcAmount;
         $this->view->offerTypes = $offerTypes;
         $this->view->currencies = $currencies;
         $this->view->paymentMethods = $paymentMethods;
@@ -135,23 +146,12 @@ class OffersController extends Controller
     {
         $offers = new OffersModel();
         $offer = $offers->getOfferByIdToEdit($id);
+        $error = false;
+        $errors = array();
+        $btcMax = 0;
+        $btcMin = 0;
+
         if ($offer) {
-            $currencyRate = $offers->getCurrencyRateById($offer['currency_id']);
-            $btcMax = $offer['max'] / (BC_PRICE * $offer['margin'] * $currencyRate);
-            $btcMin = $offer['min'] / (BC_PRICE * $offer['margin'] * $currencyRate);
-
-//            echo "<br>";
-//            echo $offer['max'];
-//            echo "<br>";
-//            echo (float)$_POST['margin'];
-//            echo "<br>";
-//            echo $currencyRate;
-//            echo "<br>";
-
-
-            $btcMin = (float)number_format((float)$btcMin, 8, '.', '');
-            $btcMax = (float)number_format((float)$btcMax, 8, '.', '');
-
             $offerData = array
             (
                 "id" => $id,
@@ -165,11 +165,16 @@ class OffersController extends Controller
                 "margin" => $offer['margin']
             );
 
-            $error = false;
-            $errors = array();
-
             if (isset($_POST['submit'])) {
-//                print_r($_POST);
+                $offerData['type'] = $_POST['type'];
+                $offerData['status'] = $_POST['status'];
+                $offerData['payment_method_group'] = $_POST['payment_method_group'];
+                $offerData['payment_method'] = $_POST['payment_method'];
+                $offerData['currency'] = $_POST['currency'];
+                $offerData['min_amount'] = $_POST['min_amount'];
+                $offerData['max_amount'] = $_POST['max_amount'];
+                $offerData['margin'] = $_POST['margin'];
+
                 $errors = $offers->validateFields($this->required);
                 if (!$errors) {
                     $errors = array_merge($errors, $offers->validateNumeric($this->numeric));
@@ -187,26 +192,32 @@ class OffersController extends Controller
                 } else {
                     $error = true;
                 }
+            } else {
+                $currencyRate = $offers->getCurrencyRateById($offer['currency_id']);
+                $btcMax = $offer['max'] / (BC_PRICE * $offer['margin'] * $currencyRate);
+                $btcMin = $offer['min'] / (BC_PRICE * $offer['margin'] * $currencyRate);
+                $btcMin = (float)number_format((float)$btcMin, 8, '.', '');
+                $btcMax = (float)number_format((float)$btcMax, 8, '.', '');
             }
 
             if (!$error && isset($_POST['submit'])) {
-                $offerData['type'] = $_POST['type'];
-                $offerData['status'] = $_POST['status'];
-                $offerData['payment_method_group'] = $_POST['payment_method_group'];
-                $offerData['payment_method'] = $_POST['payment_method'];
-                $offerData['currency'] = $_POST['currency'];
-                $offerData['min_amount'] = $_POST['min_amount'];
-                $offerData['max_amount'] = $_POST['max_amount'];
-                $offerData['margin'] = $_POST['margin'];
 
                 $wallet = new WalletModel($this->userId);
                 $userBtc = $wallet->getBtc();
                 $rate = $offers->getCurrencyRateById($offerData['currency']);
                 $editOfferBtcAmount = $offerData['max_amount'] / (BC_PRICE * $offerData['margin'] * $rate);
 
+                $totalOffersBtc = $offers->getTotalBtc($this->userId);
+                $btcMax = $offerData['max_amount'] / (BC_PRICE * $offerData['margin'] * $rate);
+                $btcMin = $offerData['min_amount'] / (BC_PRICE * $offerData['margin'] * $rate);
+                $btcMax = (float)number_format((float)$btcMax, 8, '.', '');
+                $btcMin = (float)number_format((float)$btcMin, 8, '.', '');
+                $totalOffersBtc = (float)number_format((float)$totalOffersBtc, 8, '.', '');
 
                 if ($offerData['type'] == 1 && $editOfferBtcAmount > $userBtc) {
                     $errors[] = NOT_ENOUGH_OF_BTC;
+                } elseif ($offerData['type'] == 1 && (($btcMax + $totalOffersBtc) > $userBtc)) {
+                    $errors[] = NOT_ENOUGH_OF_BTC . " " . TOTAL_AMOUNT_ERROR . $totalOffersBtc . " BTC";
                 } else {
                     $result = $offers->edit($id, $offerData);
                     if ($result) {
@@ -219,9 +230,6 @@ class OffersController extends Controller
             $currencies = $offers->getCurrencies();
             $paymentMethods = $offers->getPaymentMethods();
             $paymentMethodGroups = $offers->getPaymentMethodGroups();
-
-            print_r($offerTypes);
-
             $this->view->btcMax = $btcMax;
             $this->view->btcMin = $btcMin;
             $this->view->errors = $errors;
@@ -320,25 +328,30 @@ class OffersController extends Controller
 
     public function trade()
     {
-
         $offers = new OffersModel();
         $offerId = null;
         $amountFiat = null;
+        $errors = array();
 
         if (isset($_POST['submit'])) {
             if (isset($_POST['id']) && (isset($_POST['amount_fiat']))) {
                 $offerId = $_POST['id'];
-                $amountFiat = $_POST['amount_fiat'];
+                $amount = $_POST['amount_fiat'];
 
-                $result = $offers->createTrade($this->userId, $offerId, $amountFiat);
-//                var_dump($result);
-                if (!$result) {
-//                    //ession::destroy();
-                    header("Location: /");
+                $errors = $offers->validateOffer($this->userId, $offerId, $amount);
+                if (empty($errors)) {
+                    $result = $offers->createTrade($this->userId, $offerId, $amountFiat);
+                    if (!$result) {
+                        Session::destroy();
+                        header("Location: /");
+                    }
+                } else {
+                    $this->view->errors = $errors;
+                    $this->view->render('/offers/trade');
                 }
             }
         }
-        header("Location: /dashboard");
+//        header("Location: /dashboard");
 
 
     }

@@ -66,6 +66,7 @@ class UserModel extends Model
             Session::set('loggedIn',true);
             Session::set('user_id',$data['user_id']);
             Session::set('full_name',$data['full_name']);
+            Session::set('loggedin_time',time());
             return true;
         }
         else
