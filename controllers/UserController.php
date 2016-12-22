@@ -10,14 +10,17 @@ class UserController extends Controller
     public function __construct()
     {
         parent::__construct();
-        if(isset($_SESSION["loggedIn"]) && isset($_SESSION["user_id"])){
-            header("Location: /");
-            exit();
-        }
+
     }
 
     public function signup()
     {
+
+        if(isset($_SESSION["loggedIn"]) && isset($_SESSION["user_id"])){
+            header("Location: /");
+            exit();
+        }
+
         $user = new UserModel();
         $errors = array();
         $signupResult = false;
@@ -50,6 +53,12 @@ class UserController extends Controller
 
     public function login()
     {
+
+        if(isset($_SESSION["loggedIn"]) && isset($_SESSION["user_id"])){
+            header("Location: /");
+            exit();
+        }
+        
         $user = new UserModel();
         $remember = false;
         $errors = array();
