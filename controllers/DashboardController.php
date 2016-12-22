@@ -15,6 +15,9 @@ class DashboardController extends Controller
             $wallet = new WalletModel($this->user_id);
             $this->wallet = $wallet->getBtc();
             $this->view->wallet = $this->wallet;
+            $totalOffersBtc = $wallet->getTotalBtc($this->user_id);
+            $totalOffersBtc = (float)number_format((float)$totalOffersBtc, 8, '.', '');
+            $this->view->totalOffersBtc = $totalOffersBtc;
         }
     }
 

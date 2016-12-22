@@ -58,8 +58,26 @@ class WalletModel extends Model
         }
         return false;
     }
-    
-  
+
+
+    public function getTotalBtc($userId)
+    {
+        $sql = "SELECT sum(offers.max / (:btc * offers.margin * currencies.rate)) AS sum_btc
+                FROM offers
+                INNER JOIN currencies
+                ON offers.currency_id = currencies.id
+                WHERE user_id = :user_id 
+                AND offers.status IN (0,1,3) 
+                AND offers.type = 1";
+        $stmt = $this->db->prepare($sql);
+        $btc = BC_PRICE;
+        $stmt->bindParam(':btc', $btc, PDO::PARAM_INT);
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $stmt->setFetchMode(PDO::FETCH_ASSOC);
+        $result = $stmt->fetch();
+        return $result['sum_btc'];
+    }
 
 
 }

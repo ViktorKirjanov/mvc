@@ -455,6 +455,7 @@ class OffersModel extends Model
             $stmt->setFetchMode(PDO::FETCH_ASSOC);
             $offer = $stmt->fetch();
 
+
             if ($offer) {
                 $offerStatus = 3;
                 $sql2 = "UPDATE offers SET status = :status WHERE id= :id";
@@ -469,7 +470,8 @@ class OffersModel extends Model
                 $btc_amount = $amount / (BC_PRICE * $margin * $rate);
                 $tradeStatus = 1;
 
-                $sql3 = "INSERT INTO trades(offer_id, user_id, amount, btc_amount, status) VALUES (:offer_id,:user_id, :amount, :btc_amount, :status)";
+                $sql3 = "INSERT INTO trades(offer_id, user_id, amount, btc_amount, status) 
+                         VALUES (:offer_id,:user_id, :amount, :btc_amount, :status)";
                 $stmt3 = $this->db->prepare($sql3);
                 $stmt3->bindParam(':offer_id', $offerId, PDO::PARAM_INT);
                 $stmt3->bindParam(':user_id', $userId, PDO::PARAM_INT);
@@ -481,7 +483,7 @@ class OffersModel extends Model
                 return true;
             }
         } catch (Exception $e) {
-//            echo $e->getMessage();
+            echo $e->getMessage();
             $this->db->rollBack();
             return false;
         }
@@ -660,10 +662,10 @@ class OffersModel extends Model
 
         $userBtcOffer = $offer['max'] / (BC_PRICE * $offer['margin'] * $offer['rate']);
 
-        if($amount<$offer['min'] || $amount > $offer['max']) {
+        if ($amount < $offer['min'] || $amount > $offer['max']) {
             $errors[] = WRONG_MIN_MAX;
         }
-        if($userBtcOffer > $userBtc){
+        if ($userBtcOffer > $userBtc) {
             $errors[] = NOT_ENOUGH_OF_BTC_2;
         }
 
@@ -672,21 +674,7 @@ class OffersModel extends Model
 
     }
 
-    public  function getTotalBtc($userId){
-        $sql = "SELECT sum(offers.max / (:btc * offers.margin * currencies.rate)) AS sum_btc
-                FROM offers
-                INNER JOIN currencies
-                ON offers.currency_id = currencies.id
-                WHERE user_id = :user_id AND offers.status =1";
-        $stmt = $this->db->prepare($sql);
-        $btc = BC_PRICE;
-        $stmt->bindParam(':btc', $btc, PDO::PARAM_INT);
-        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->execute();
-        $stmt->setFetchMode(PDO::FETCH_ASSOC);
-        $result =  $stmt->fetch();
-        return $result['sum_btc'];
-    }
+    
 
 
 }

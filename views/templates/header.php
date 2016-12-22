@@ -65,6 +65,8 @@
                     <li>
                         <div id="wallet">
                             <?php echo (float)$this->wallet; ?>
+                            (Selling: <?php echo (float)$this->totalOffersBtc; ?>)
+
                             <span class="glyphicon glyphicon-btc"></span>
                         </div>
                     </li>

@@ -4,6 +4,18 @@ class UserController extends Controller
 {
 
 
+    /**
+     * UserController constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+        if(isset($_SESSION["loggedIn"]) && isset($_SESSION["user_id"])){
+            header("Location: /");
+            exit();
+        }
+    }
+
     public function signup()
     {
         $user = new UserModel();
@@ -62,7 +74,7 @@ class UserController extends Controller
             }
         }
         $this->view->errors = $errors;
-        $this->view->render('user/login');
+        $this->view->render('/user/login');
     }
 
     public function logout()

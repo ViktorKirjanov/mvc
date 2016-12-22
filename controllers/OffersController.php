@@ -30,8 +30,12 @@ class OffersController extends Controller
         } else {
             $this->userId = Session::get("user_id");
             $this->offers = new OffersModel();
-            $this->wallet = new WalletModel($this->userId);
-            $this->view->wallet = $this->wallet->getBtc();
+            $wallet = new WalletModel($this->userId);
+            $this->wallet = $wallet->getBtc();
+            $this->view->wallet = $this->wallet;
+            $totalOffersBtc = $wallet->getTotalBtc($this->userId);
+            $totalOffersBtc = (float)number_format((float)$totalOffersBtc, 8, '.', '');
+            $this->view->totalOffersBtc = $totalOffersBtc;
         }
 
     }
@@ -103,7 +107,7 @@ class OffersController extends Controller
             $wallet = new WalletModel($this->userId);
             $userBtc = $wallet->getBtc();
             $rate = $offers->getCurrencyRateById($currency);
-            $totalOffersBtc = $offers->getTotalBtc($this->userId);
+            $totalOffersBtc = $wallet->getTotalBtc($this->userId);
             $newMaxOfferBtcAmount = $maxAmount / (BC_PRICE * $margin * $rate);
             $newMinOfferBtcAmount = $minAmount / (BC_PRICE * $margin * $rate);
             $newMaxOfferBtcAmount = (float)number_format((float)$newMaxOfferBtcAmount, 8, '.', '');
@@ -207,7 +211,7 @@ class OffersController extends Controller
                 $rate = $offers->getCurrencyRateById($offerData['currency']);
                 $editOfferBtcAmount = $offerData['max_amount'] / (BC_PRICE * $offerData['margin'] * $rate);
 
-                $totalOffersBtc = $offers->getTotalBtc($this->userId);
+                $totalOffersBtc = $wallet->getTotalBtc($this->userId);
                 $btcMax = $offerData['max_amount'] / (BC_PRICE * $offerData['margin'] * $rate);
                 $btcMin = $offerData['min_amount'] / (BC_PRICE * $offerData['margin'] * $rate);
                 $btcMax = (float)number_format((float)$btcMax, 8, '.', '');
@@ -330,17 +334,16 @@ class OffersController extends Controller
     {
         $offers = new OffersModel();
         $offerId = null;
-        $amountFiat = null;
         $errors = array();
 
         if (isset($_POST['submit'])) {
             if (isset($_POST['id']) && (isset($_POST['amount_fiat']))) {
                 $offerId = $_POST['id'];
                 $amount = $_POST['amount_fiat'];
-
+                
                 $errors = $offers->validateOffer($this->userId, $offerId, $amount);
                 if (empty($errors)) {
-                    $result = $offers->createTrade($this->userId, $offerId, $amountFiat);
+                    $result = $offers->createTrade($this->userId, $offerId, $amount);
                     if (!$result) {
                         Session::destroy();
                         header("Location: /");
@@ -351,7 +354,7 @@ class OffersController extends Controller
                 }
             }
         }
-//        header("Location: /dashboard");
+        header("Location: /dashboard");
 
 
     }
