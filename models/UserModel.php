@@ -54,6 +54,9 @@ class UserModel extends Model
      * @return bool
      */
     public  function authentication($username, $password, $remember){
+
+//        var_dump($remember);
+//        die();
         $sql = "SELECT user_id, full_name FROM users WHERE  username = :username AND password = MD5(:password)";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':username',$username);
@@ -66,7 +69,18 @@ class UserModel extends Model
             Session::set('loggedIn',true);
             Session::set('user_id',$data['user_id']);
             Session::set('full_name',$data['full_name']);
-            Session::set('loggedin_time',time());
+//            Session::set('loggedin_time',time());
+            if($remember) {
+                setcookie ("member_login", $username, time()+ (10 * 365 * 24 * 60 * 60));
+                setcookie ("member_password", $password, time()+ (10 * 365 * 24 * 60 * 60));
+            } else {
+                if(isset($_COOKIE["member_login"])) {
+                    setcookie ("member_login","");
+                }
+                if(isset($_COOKIE["member_password"])) {
+                    setcookie ("member_password","");
+                }
+            }
             return true;
         }
         else
